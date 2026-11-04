@@ -12,10 +12,7 @@
 
 
 
-<p>
-I enjoy building small tools and exploring creative ideas.<br>
-Still learning step by step.
-</p>
+
 
 <img src="./assets/mutsumi_final_v2.gif" alt="Mutsumi and her cat" width="100%">
 
