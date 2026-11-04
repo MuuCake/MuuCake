@@ -6,10 +6,13 @@
 <br>
 
 
+
 <img align="right" src="./assets/mutsumi_right_v3.gif" alt="Wakaba Mutsumi and her black cat" width="46%">
 
+<br><br><br><br>
 
 <h3>🌸 About Me</h3>
+
 
 <p>
   Mechanical Engineering student at Korea University.
