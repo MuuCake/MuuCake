@@ -34,4 +34,12 @@
 
 <img src="./assets/sakura_furin_final.gif" alt="Sakura wind chime" width="100%">
 
+
+<br>
+
+<p align="center">
+  <img src="https://komarev.com/ghpvc/?username=MuuCake&label=Profile%20Views&color=E8A0B8&style=flat" alt="Profile Views">
+</p>
+
+
 </div>
