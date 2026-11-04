@@ -29,7 +29,7 @@
 
 
 <p>
-  <a href="https://www.xiaohongshu.com/user/profile/64a7f4a9000000014035109"><img src="./assets/xiaohongshu.svg" alt="Xiaohongshu" width="65" valign="middle"></a>
+  <a href="https://xhslink.cn/o/4QsNglT4bkY"><img src="./assets/xiaohongshu.svg" alt="Xiaohongshu" width="65" valign="middle"></a>
   &nbsp;&nbsp;
   <a href="https://www.instagram.com/zeayu2222/"><img src="./assets/instagram.svg" alt="Instagram" width="28" valign="middle"></a>
 </p>
