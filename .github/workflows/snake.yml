@@ -1,0 +1,31 @@
+
+name: Sakura Contribution Snake
+
+on:
+  schedule:
+    - cron: "0 0 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Generate Sakura Snake
+        uses: Platane/snk/svg-only@v3
+        with:
+          github_user_name: MuuCake
+          outputs: |
+            dist/github-contribution-grid-snake.svg?color_snake=#D96B9B&color_dots=#FFF1F5,#F9CFDF,#F3A8C4,#E77CA6,#BA477D
+            dist/github-contribution-grid-snake-dark.svg?color_snake=#F3A0C4&color_dots=#161B22,#563247,#864563,#BD658E,#F3ABCB
+
+      - name: Publish Snake
+        uses: crazy-max/ghaction-github-pages@v3.1.0
+        with:
+          target_branch: output
+          build_dir: dist
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
