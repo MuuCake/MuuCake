@@ -3,18 +3,13 @@
 <img src="./assets/muucake_header_animated.svg" alt="MuuCake" width="100%">
 
 
-<table align="center">
-  <tr>
-    <td align="center" width="520">
-      <h3>🌸 About Me 🌸</h3>
-      <p>Mechanical Engineering student at Korea University.</p>
-      <p>
-        I enjoy building small tools and exploring creative ideas.<br>
-        Still learning step by step.
-      </p>
-    </td>
-  </tr>
-</table>
+
+<p align="center">
+  <img src="./assets/muucake_about_me.svg"
+       alt="About Me"
+       width="600">
+</p>
+
 
 
 <p>
