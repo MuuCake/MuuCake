@@ -1,6 +1,6 @@
 
 <div align="center">
-<img src="./assets/muucake_header_intro.gif" alt="MuuCake" width="100%">
+<img src="./assets/muucake_header_animated.svg" alt="MuuCake" width="100%">
 
 <h3>🌸 About Me</h3>
 
