@@ -3,7 +3,8 @@ name: Sakura Contribution Snake
 
 on:
   schedule:
-    - cron: "0 0 * * *"
+    # Every day at 09:30 KST
+    - cron: "30 0 * * *"
   workflow_dispatch:
 
 permissions:
