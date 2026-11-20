@@ -1,0 +1,48 @@
+
+name: Daily GitHub Project Snapshot
+
+on:
+  # 每天韩国时间上午 09:00
+  schedule:
+    - cron: '0 0 * * *'
+
+  # 允许手动测试
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  daily-update:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Update daily statistics
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: python scripts/daily_stats.py
+
+      - name: Commit daily update
+        env:
+          COMMIT_EMAIL: ${{ vars.COMMIT_EMAIL }}
+        run: |
+          if [ -z "$COMMIT_EMAIL" ]; then
+            echo "COMMIT_EMAIL is missing"
+            exit 1
+          fi
+
+          git config user.name "MuuCake"
+          git config user.email "$COMMIT_EMAIL"
+
+          git add activity/latest.md
+
+          if git diff --cached --quiet; then
+            echo "No changes today"
+            exit 0
+          fi
+
+          git commit -m "docs: update daily GitHub stats"
+          git push origin HEAD:main
