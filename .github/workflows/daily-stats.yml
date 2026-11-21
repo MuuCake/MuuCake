@@ -2,29 +2,42 @@
 name: Daily GitHub Project Snapshot
 
 on:
-  # 每天韩国时间上午 09:00
   schedule:
-    - cron: '0 0 * * *'
+    # Korea time: 09:05 - 09:55
+    # Retry every 5 minutes
+    - cron: '5-55/5 0 * * *'
 
-  # 允许手动测试
+  # Allow manual testing
   workflow_dispatch:
 
+# Permission to push commits
 permissions:
   contents: write
+
+# Prevent simultaneous updates
+concurrency:
+  group: daily-project-snapshot-main
+  cancel-in-progress: false
 
 jobs:
   daily-update:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
 
     steps:
+      # Checkout latest main branch
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
+        with:
+          ref: main
 
+      # Generate daily statistics
       - name: Update daily statistics
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: python scripts/daily_stats.py
 
+      # Commit only if the file changed
       - name: Commit daily update
         env:
           COMMIT_EMAIL: ${{ vars.COMMIT_EMAIL }}
@@ -40,9 +53,11 @@ jobs:
           git add activity/latest.md
 
           if git diff --cached --quiet; then
-            echo "No changes today"
+            echo "No changes needed today"
             exit 0
           fi
 
           git commit -m "docs: update daily GitHub stats"
           git push origin HEAD:main
+
+          echo "Daily snapshot committed successfully"
