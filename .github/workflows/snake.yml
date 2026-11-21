@@ -1,18 +1,22 @@
-
 name: Sakura Contribution Snake
 
 on:
   schedule:
-    # Every day at 09:30 KST
-    - cron: "30 0 * * *"
+    # Every day at 11:00 KST
+    - cron: "0 2 * * *"
   workflow_dispatch:
 
 permissions:
   contents: write
 
+concurrency:
+  group: sakura-snake-main
+  cancel-in-progress: false
+
 jobs:
   generate:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
 
     steps:
       - name: Generate Sakura Snake
