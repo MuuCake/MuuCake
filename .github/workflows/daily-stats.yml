@@ -1,11 +1,15 @@
 
 name: Daily GitHub Project Snapshot
 
+
 on:
   schedule:
-    # Korea time: 09:05 - 09:55
-    # Retry every 5 minutes
+    # 09:05 - 09:55 KST, every 5 minutes
     - cron: '5-55/5 0 * * *'
+
+    # Backup: 12:17 and 18:17 KST
+    - cron: '17 3,9 * * *'
+
 
   # Allow manual testing
   workflow_dispatch:
