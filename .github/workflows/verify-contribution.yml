@@ -2,8 +2,12 @@ name: Verify Daily Profile Contribution
 
 on:
   schedule:
-    # Check today and yesterday at 14:37 and 19:37 KST
-    - cron: '37 5,10 * * *'
+    # 14:37 KST: check today and yesterday
+    - cron: '37 5 * * *'
+    # 19:37 KST: check and dispatch one recovery if today's commit is missing
+    - cron: '37 10 * * *'
+    # 20:17 KST: recheck after a possible recovery
+    - cron: '17 11 * * *'
   workflow_dispatch:
     inputs:
       target_day:
@@ -14,21 +18,60 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: verify-profile-contribution
+  cancel-in-progress: false
+
 jobs:
-  verify:
+  verify-today:
+    name: Check target UTC date
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    outputs:
+      status: ${{ steps.audit.outputs.status }}
     steps:
-      - name: Checkout verification script
+      - name: Checkout
         uses: actions/checkout@v6
-      - name: Verify current UTC day
+      - name: Verify snapshot and contribution data
+        id: audit
+        continue-on-error: true
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TARGET_DAY: ${{ inputs.target_day }}
         run: python scripts/verify_contribution.py
-      - name: Verify previous UTC day on scheduled runs
-        if: ${{ github.event_name == 'schedule' }}
+      - name: Mark verification error
+        if: ${{ steps.audit.outcome == 'failure' }}
+        run: exit 1
+
+  verify-yesterday:
+    name: Independently verify previous UTC day
+    if: ${{ github.event_name == 'schedule' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+      - name: Verify yesterday
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           TARGET_DAY="$(date -u -d yesterday +%F)" python scripts/verify_contribution.py
+
+  recover-today:
+    name: Trigger one recovery attempt
+    needs: verify-today
+    if: ${{ always() && github.event_name == 'schedule' && github.event.schedule == '37 10 * * *' && needs.verify-today.outputs.status == 'MISSING_COMMIT' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      actions: write
+      contents: read
+    steps:
+      - name: Dispatch daily snapshot
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh workflow run daily-stats.yml --ref main --repo "$GITHUB_REPOSITORY"
+          echo '### Recovery dispatched' >> "$GITHUB_STEP_SUMMARY"
+          echo 'Requested one Daily GitHub Project Snapshot run.' >> "$GITHUB_STEP_SUMMARY"
+          echo 'The 20:17 KST verification will check for the new commit.' >> "$GITHUB_STEP_SUMMARY"
