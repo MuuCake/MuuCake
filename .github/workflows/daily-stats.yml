@@ -1,7 +1,6 @@
 
 name: Daily GitHub Project Snapshot
 
-
 on:
   schedule:
     # 09:05 - 09:55 KST, every 5 minutes
@@ -10,15 +9,12 @@ on:
     # Backup: 12:17 and 18:17 KST
     - cron: '17 3,9 * * *'
 
-
-  # Allow manual testing
   workflow_dispatch:
 
-# Permission to push commits
 permissions:
   contents: write
+  actions: write
 
-# Prevent simultaneous updates
 concurrency:
   group: daily-project-snapshot-main
   cancel-in-progress: false
@@ -29,25 +25,28 @@ jobs:
     timeout-minutes: 10
 
     steps:
-      # Checkout latest main branch
+      # Checkout latest main
       - name: Checkout repository
         uses: actions/checkout@v6
         with:
           ref: main
 
-      # Generate daily statistics
+      # Update real project statistics
       - name: Update daily statistics
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: python scripts/daily_stats.py
 
-      # Commit only if the file changed
+      # Commit only when the file changes
       - name: Commit daily update
+        id: commit
         env:
           COMMIT_EMAIL: ${{ vars.COMMIT_EMAIL }}
         run: |
+          set -euo pipefail
+
           if [ -z "$COMMIT_EMAIL" ]; then
-            echo "COMMIT_EMAIL is missing"
+            echo "::error::COMMIT_EMAIL is missing"
             exit 1
           fi
 
@@ -65,6 +64,20 @@ jobs:
           git commit -m "docs: update daily GitHub stats"
           git push origin HEAD:main
 
+          echo "committed=true" >> "$GITHUB_OUTPUT"
+
           echo "Daily snapshot committed successfully"
           echo "### ✅ Committed successfully" >> "$GITHUB_STEP_SUMMARY"
           echo "Commit: $(git rev-parse --short HEAD)" >> "$GITHUB_STEP_SUMMARY"
+
+      # Trigger Sakura Snake only after a new commit
+      - name: Trigger Sakura Snake
+        if: steps.commit.outputs.committed == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh workflow run snake.yml \
+            --ref main \
+            --repo "$GITHUB_REPOSITORY"
+
+          echo "### 🌸 Sakura Snake triggered" >> "$GITHUB_STEP_SUMMARY"
