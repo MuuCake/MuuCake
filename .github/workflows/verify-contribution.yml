@@ -2,11 +2,11 @@ name: Verify Daily Profile Contribution
 
 on:
   schedule:
-    # 14:37 KST: check today and yesterday
+    # 05:37 UTC: check today and yesterday
     - cron: '37 5 * * *'
-    # 19:37 KST: check and dispatch one recovery if today's commit is missing
+    # 10:37 UTC: check and dispatch one recovery if today's commit is missing
     - cron: '37 10 * * *'
-    # 20:17 KST: recheck after a possible recovery
+    # 11:17 UTC: recheck after a possible recovery
     - cron: '17 11 * * *'
   workflow_dispatch:
     inputs:
@@ -74,4 +74,4 @@ jobs:
           gh workflow run daily-stats.yml --ref main --repo "$GITHUB_REPOSITORY"
           echo '### Recovery dispatched' >> "$GITHUB_STEP_SUMMARY"
           echo 'Requested one Daily GitHub Project Snapshot run.' >> "$GITHUB_STEP_SUMMARY"
-          echo 'The 20:17 KST verification will check for the new commit.' >> "$GITHUB_STEP_SUMMARY"
+          echo 'The 11:17 UTC verification will check for the new commit.' >> "$GITHUB_STEP_SUMMARY"
