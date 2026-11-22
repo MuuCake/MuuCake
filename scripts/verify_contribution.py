@@ -12,7 +12,7 @@ OWNER = REPOSITORY.split("/", 1)[0]
 TOKEN = os.environ["GH_TOKEN"]
 TARGET = date.fromisoformat(
     os.environ.get("TARGET_DAY") or
-    (datetime.now(timezone.utc).date() - timedelta(days=1)).isoformat()
+    datetime.now(timezone.utc).date().isoformat()
 )
 START = datetime.combine(TARGET, time.min, timezone.utc)
 END = START + timedelta(days=1)
