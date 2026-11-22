@@ -2,7 +2,7 @@ name: Sakura Contribution Snake
 
 on:
   schedule:
-    # Every day at 11:13, 12:13, 15:13, 21:13 KST
+    # UTC only: 02:13, 03:13, 06:13, 12:13 (existing times unchanged)
     - cron: "13 2,3,6,12 * * *"
   workflow_dispatch:
 
