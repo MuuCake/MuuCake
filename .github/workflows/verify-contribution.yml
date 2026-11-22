@@ -2,12 +2,12 @@ name: Verify Daily Profile Contribution
 
 on:
   schedule:
-    # Check previous UTC day at 14:37 and 19:37 KST
+    # Check today and yesterday at 14:37 and 19:37 KST
     - cron: '37 5,10 * * *'
   workflow_dispatch:
     inputs:
       target_day:
-        description: 'UTC date YYYY-MM-DD (empty = previous UTC day)'
+        description: 'UTC date YYYY-MM-DD (empty = today)'
         type: string
         required: false
 
@@ -21,8 +21,14 @@ jobs:
     steps:
       - name: Checkout verification script
         uses: actions/checkout@v6
-      - name: Verify actual GitHub profile contributions
+      - name: Verify current UTC day
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TARGET_DAY: ${{ inputs.target_day }}
         run: python scripts/verify_contribution.py
+      - name: Verify previous UTC day on scheduled runs
+        if: ${{ github.event_name == 'schedule' }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TARGET_DAY="$(date -u -d yesterday +%F)" python scripts/verify_contribution.py
