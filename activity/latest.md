@@ -1,6 +1,6 @@
 # Daily GitHub Snapshot — 2026-11-22
 
-Date: 2026-11-22 (KST)
+Date: 2026-11-22 (UTC)
 
 - Public repositories: 2
 - Total stars: 104
