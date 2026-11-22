@@ -1,123 +1,100 @@
 
-name: Daily GitHub Project Snapshot
+import json
+import os
+from datetime import datetime, timezone
+from pathlib import Path
+from urllib.request import Request, urlopen
 
-on:
-  schedule:
-    # 09:05 - 09:55 KST, every 5 minutes
-    - cron: '5-55/5 0 * * *'
+# GitHub account
+username = os.environ["GITHUB_REPOSITORY_OWNER"]
+token = os.environ["GH_TOKEN"]
 
-    # Backups: 12:17 and 18:17 KST
-    - cron: '17 3,9 * * *'
+# Use UTC date for GitHub contribution tracking
+today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
 
-  workflow_dispatch:
+# Always update the same file
+output = Path("activity/latest.md")
+title = f"# Daily GitHub Snapshot — {today}"
 
-permissions:
-  contents: write
+# Avoid duplicate updates on the same UTC day
+if output.exists():
+    old = output.read_text(encoding="utf-8")
 
-# Prevent simultaneous commits
-concurrency:
-  group: daily-project-snapshot-main
-  cancel-in-progress: false
+    if (
+        old.startswith(title + "\n")
+        and f"Date: {today} (UTC)" in old
+    ):
+        print("Already updated today (UTC).")
+        raise SystemExit(0)
 
-jobs:
-  daily-update:
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
+# Fetch real GitHub project statistics
+repos = []
+page = 1
 
-    steps:
-      # Get latest main branch
-      - name: Checkout repository
-        uses: actions/checkout@v6
-        with:
-          ref: main
+while True:
+    url = (
+        f"https://api.github.com/users/{username}/repos"
+        f"?type=owner&per_page=100&page={page}"
+    )
 
-      # Generate the real statistics
-      - name: Update daily statistics
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: python scripts/daily_stats.py
+    request = Request(
+        url,
+        headers={
+            "Authorization": f"Bearer {token}",
+            "Accept": "application/vnd.github+json",
+            "User-Agent": "Daily-GitHub-Snapshot"
+        }
+    )
 
-      # Verify the snapshot has today's UTC date
-      - name: Verify UTC date
-        shell: bash
-        run: |
-          set -euo pipefail
+    with urlopen(request, timeout=30) as response:
+        batch = json.load(response)
 
-          TODAY="$(date -u +%Y-%m-%d)"
+    if not isinstance(batch, list):
+        raise RuntimeError("Invalid GitHub API response.")
 
-          grep -Fqx \
-            "# Daily GitHub Snapshot — $TODAY" \
-            activity/latest.md
+    repos.extend(batch)
 
-          grep -Fqx \
-            "Date: $TODAY (UTC)" \
-            activity/latest.md
+    if len(batch) < 100:
+        break
 
-          echo "UTC date verified: $TODAY"
+    page += 1
 
-      # Commit and retry if a push conflicts
-      - name: Commit daily update
-        shell: bash
-        env:
-          COMMIT_EMAIL: ${{ vars.COMMIT_EMAIL }}
-        run: |
-          set -euo pipefail
+# Calculate statistics
+stars = sum(r["stargazers_count"] for r in repos)
+forks = sum(r["forks_count"] for r in repos)
 
-          TODAY="$(date -u +%Y-%m-%d)"
+# Prepare Markdown content
+content = [
+    title,
+    "",
+    f"Date: {today} (UTC)",
+    "",
+    f"- Public repositories: {len(repos)}",
+    f"- Total stars: {stars}",
+    f"- Total forks: {forks}",
+    "",
+    "## Recently Updated Projects",
+    ""
+]
 
-          if [ -z "$COMMIT_EMAIL" ]; then
-            echo "::error::COMMIT_EMAIL is missing"
-            exit 1
-          fi
+recent = sorted(
+    repos,
+    key=lambda r: r.get("pushed_at") or "",
+    reverse=True
+)
 
-          git config user.name "MuuCake"
-          git config user.email "$COMMIT_EMAIL"
+for repo in recent[:5]:
+    content.append(
+        f"- [{repo['name']}]({repo['html_url']})"
+        f" — {repo['stargazers_count']} stars"
+    )
 
-          git add activity/latest.md
+# Update existing snapshot file
+output.parent.mkdir(parents=True, exist_ok=True)
 
-          # Already updated today
-          if git diff --cached --quiet; then
-            echo "ALREADY_UPDATED: $TODAY"
+output.write_text(
+    "\n".join(content) + "\n",
+    encoding="utf-8"
+)
 
-            echo "### ✅ Already updated" >> "$GITHUB_STEP_SUMMARY"
-            echo "- UTC date: $TODAY" >> "$GITHUB_STEP_SUMMARY"
-            echo "- No new commit needed" >> "$GITHUB_STEP_SUMMARY"
-            exit 0
-          fi
-
-          # Create today's commit
-          git commit -m "docs: update daily GitHub stats"
-
-          # Retry push at most 3 times
-          for attempt in 1 2 3; do
-            if git push origin HEAD:main; then
-              echo "COMMITTED: $TODAY"
-
-              echo "### ✅ Committed" >> "$GITHUB_STEP_SUMMARY"
-              echo "- UTC date: $TODAY" >> "$GITHUB_STEP_SUMMARY"
-              echo "- Commit: $(git rev-parse --short HEAD)" >> "$GITHUB_STEP_SUMMARY"
-              exit 0
-            fi
-
-            if [ "$attempt" -eq 3 ]; then
-              echo "::error::Push failed after 3 attempts"
-              exit 1
-            fi
-
-            echo "Push failed. Retrying: $attempt"
-
-            git fetch origin main
-            git rebase FETCH_HEAD
-
-            sleep $((attempt * 5))
-          done
-
-      # Show a clear failure summary
-      - name: Report failure
-        if: failure()
-        shell: bash
-        run: |
-          echo "### ❌ Failed" >> "$GITHUB_STEP_SUMMARY"
-          echo "- UTC date: $(date -u +%Y-%m-%d)" >> "$GITHUB_STEP_SUMMARY"
-          echo "- Trigger: $GITHUB_EVENT_NAME" >> "$GITHUB_STEP_SUMMARY"
-          echo "- Review the failed step logs" >> "$GITHUB_STEP_SUMMARY"
+print(f"Daily snapshot updated for {today} (UTC).")
