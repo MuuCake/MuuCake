@@ -3,11 +3,13 @@ name: Daily GitHub Project Snapshot
 
 on:
   schedule:
-    # 09:05 - 09:55 KST, every 5 minutes
-    - cron: '5-55/5 0 * * *'
-
-    # Backup: 12:17 and 18:17 KST
-    - cron: '17 3,9 * * *'
+    # UTC only. First attempt: 00:23 UTC, 23 minutes after date rollover.
+    # Spread later attempts across the UTC day to reduce missed schedules.
+    - cron: '23,47 0 * * *'
+    - cron: '17 1 * * *'
+    - cron: '41 3 * * *'
+    - cron: '13 7 * * *'
+    - cron: '17 9 * * *'
 
   workflow_dispatch:
 
