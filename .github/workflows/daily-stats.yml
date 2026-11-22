@@ -58,6 +58,7 @@ jobs:
 
           if git diff --cached --quiet; then
             echo "No changes needed today"
+            echo "### ✅ Already updated today" >> "$GITHUB_STEP_SUMMARY"
             exit 0
           fi
 
@@ -65,3 +66,5 @@ jobs:
           git push origin HEAD:main
 
           echo "Daily snapshot committed successfully"
+          echo "### ✅ Committed successfully" >> "$GITHUB_STEP_SUMMARY"
+          echo "Commit: $(git rev-parse --short HEAD)" >> "$GITHUB_STEP_SUMMARY"
