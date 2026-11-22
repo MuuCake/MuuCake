@@ -1,29 +1,30 @@
 
 import json
 import os
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from urllib.request import Request, urlopen
-from zoneinfo import ZoneInfo
 
 # GitHub account
 username = os.environ["GITHUB_REPOSITORY_OWNER"]
 token = os.environ["GH_TOKEN"]
 
-# Korea time
-today = datetime.now(
-    ZoneInfo("Asia/Seoul")
-).strftime("%Y-%m-%d")
+# Use UTC date for GitHub contribution tracking
+today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
 
-# Only one file is updated
+# Always update the same file
 output = Path("activity/latest.md")
 title = f"# Daily GitHub Snapshot — {today}"
 
-# Avoid duplicate commits on the same day
+# Avoid duplicate updates on the same UTC day
 if output.exists():
     old = output.read_text(encoding="utf-8")
-    if old.startswith(title + "\n"):
-        print("Already updated today.")
+
+    if (
+        old.startswith(title + "\n")
+        and f"Date: {today} (UTC)" in old
+    ):
+        print("Already updated today (UTC).")
         raise SystemExit(0)
 
 # Fetch real GitHub project statistics
@@ -36,14 +37,20 @@ while True:
         f"?type=owner&per_page=100&page={page}"
     )
 
-    request = Request(url, headers={
-        "Authorization": f"Bearer {token}",
-        "Accept": "application/vnd.github+json",
-        "User-Agent": "Daily-GitHub-Snapshot"
-    })
+    request = Request(
+        url,
+        headers={
+            "Authorization": f"Bearer {token}",
+            "Accept": "application/vnd.github+json",
+            "User-Agent": "Daily-GitHub-Snapshot"
+        }
+    )
 
     with urlopen(request, timeout=30) as response:
         batch = json.load(response)
+
+    if not isinstance(batch, list):
+        raise RuntimeError("Invalid GitHub API response.")
 
     repos.extend(batch)
 
@@ -52,13 +59,15 @@ while True:
 
     page += 1
 
+# Calculate statistics
 stars = sum(r["stargazers_count"] for r in repos)
 forks = sum(r["forks_count"] for r in repos)
 
+# Prepare Markdown content
 content = [
     title,
     "",
-    f"Date: {today} (KST)",
+    f"Date: {today} (UTC)",
     "",
     f"- Public repositories: {len(repos)}",
     f"- Total stars: {stars}",
@@ -80,10 +89,12 @@ for repo in recent[:5]:
         f" — {repo['stargazers_count']} stars"
     )
 
+# Update existing snapshot file
 output.parent.mkdir(parents=True, exist_ok=True)
+
 output.write_text(
     "\n".join(content) + "\n",
     encoding="utf-8"
 )
 
-print("Daily snapshot updated successfully.")
+print(f"Daily snapshot updated for {today} (UTC).")
