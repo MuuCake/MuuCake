@@ -128,12 +128,11 @@ def counted_contributions():
     for group in collection["commitContributionsByRepository"]:
         if group["repository"]["nameWithOwner"].lower() != REPOSITORY.lower():
             continue
-        for node in group["contributions"]["nodes"]:
-            when = datetime.fromisoformat(
-                node["occurredAt"].replace("Z", "+00:00")
-            )
-            if when.astimezone(timezone.utc).date() == TARGET:
-                repo_count += node["commitCount"]
+        # GraphQL already limits this collection to the target day.
+        # occurredAt is not reliably at midnight UTC.
+        repo_count += sum(
+            node["commitCount"] for node in group["contributions"]["nodes"]
+        )
     return total, repo_count
 
 
