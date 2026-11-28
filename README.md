@@ -15,7 +15,7 @@
 
 
 <p>
-  Mechanical Engineering student at Korea University.
+  Student at Korea University.
 </p>
 
 <p>
